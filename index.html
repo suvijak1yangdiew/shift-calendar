@@ -66,7 +66,21 @@ textarea{display:block;width:100%;border:0;border-radius:10px;background:var(--s
 .c .ph{position:absolute;top:5px;right:3px;width:7px;height:6px;border-radius:2px;background:var(--mute)}
 .lg{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 14px;font-size:11px;color:var(--mute);margin:10px 0 4px}
 .lg i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px;vertical-align:-1px}
-#quickOpen{display:block;margin:4px auto 16px;font-size:13px;color:#1c4587;padding:8px 14px}
+.tools{display:flex;justify-content:center;flex-wrap:wrap;gap:4px;margin:4px 0 16px}
+.tools button{font-size:13px;color:#1c4587;padding:8px 12px}
+#paste{width:calc(100% - 28px);max-width:452px;border-radius:18px;background:var(--bg);padding:16px}
+#paste h3{margin:0 0 4px;font-size:17px}
+#paste p{margin:0 0 10px;font-size:12px;color:var(--mute)}
+#paste .row{display:flex;align-items:center;gap:8px;margin:10px 0;font-size:13px}
+#paste input{width:70px;border:0;border-radius:10px;background:var(--soft);padding:8px;font:inherit;font-size:16px}
+#pastePreview{display:flex;flex-wrap:wrap;gap:4px;font-size:11px;max-height:30dvh;overflow:auto}
+#pastePreview span{background:var(--card);border-radius:8px;padding:3px 6px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+#pastePreview b{border-radius:4px;padding:0 5px;margin-left:4px}
+#pasteMsg{font-size:12px;color:var(--red);min-height:18px;margin:8px 0}
+#paste .bar{display:flex;justify-content:flex-end;gap:8px}
+#paste .bar button{border-radius:14px;padding:8px 16px;font-size:13px;background:#efede8}
+#paste #pasteApply{background:var(--ink);color:#fff}
+#paste #pasteApply:disabled{opacity:.35}
 
 .st{font-size:14px;font-weight:700;margin:0 4px 8px;display:flex;justify-content:space-between}
 .st small{font-weight:400;color:var(--mute)}
@@ -122,7 +136,10 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     </div>
     <div class="g" id="grid"></div>
     <div class="lg"><span><i class="m"></i>เช้า</span><span><i class="a"></i>กลาง</span><span><i class="n"></i>ดึก</span><span><i class="x"></i>หยุด/ลา</span></div>
-    <button type="button" id="quickOpen">⚡ ใส่กะแบบเร็ว</button>
+    <div class="tools">
+      <button type="button" id="quickOpen">⚡ ใส่กะแบบเร็ว</button>
+      <button type="button" id="pasteOpen">📋 วางกะทั้งเดือน</button>
+    </div>
   </section>
 
   <section aria-label="บันทึกเดือนนี้">
@@ -143,6 +160,16 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <dialog id="sheet" aria-label="แก้ไขวัน">
   <div class="bar"><button type="button" id="sheetClose">เสร็จ</button></div>
   <div id="sheetBody" class="card"></div>
+</dialog>
+
+<dialog id="paste" aria-labelledby="pasteTitle">
+  <h3 id="pasteTitle">วางกะทั้งเดือน</h3>
+  <p>วางรหัสกะเรียงตามวัน คั่นด้วยเว้นวรรค เช่น A2 N X N N M M หรือคัดลอกแถวจาก Excel มาวาง ใช้ - สำหรับวันที่ไม่ต้องการเปลี่ยน</p>
+  <textarea id="pasteText" rows="3" aria-label="รหัสกะ" autocapitalize="characters" autocomplete="off" spellcheck="false"></textarea>
+  <div class="row"><label for="pasteStart">เริ่มวันที่</label><input id="pasteStart" type="number" inputmode="numeric" min="1" max="31" value="1"><span id="pasteMonth"></span></div>
+  <div id="pastePreview"></div>
+  <div id="pasteMsg" role="alert"></div>
+  <div class="bar"><button type="button" id="pasteCancel">ยกเลิก</button><button type="button" id="pasteApply" disabled>ใส่กะ</button></div>
 </dialog>
 
 <dialog id="viewer" aria-label="ภาพแนบ">

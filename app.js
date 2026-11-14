@@ -1,4 +1,4 @@
-import { SHIFTS, shiftByCode, dateKey, monthCells, monthTitle, MONTHS, isEmptyDay, validateBackup } from './core.js';
+import { SHIFTS, shiftByCode, dateKey, monthCells, monthTitle, MONTHS, isEmptyDay, validateBackup, parseShiftLine } from './core.js';
 
 const DOW = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
 const DOW_S = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
@@ -270,6 +270,38 @@ function setQuick(on) {
   for (const b of $('#quickChips').children) b.classList.remove('sel');
 }
 
+// ---------- paste a whole month of shifts ----------
+let pastePlan = []; // [{ key, code }] ready to apply
+function previewPaste() {
+  const { y, m0 } = state;
+  const last = new Date(y, m0 + 1, 0).getDate();
+  const start = Number($('#pasteStart').value);
+  const { items, unknown } = parseShiftLine($('#pasteText').value);
+  let msg = '';
+  if (!Number.isInteger(start) || start < 1 || start > last) msg = `วันเริ่มต้องอยู่ระหว่าง 1 ถึง ${last}`;
+  else if (unknown.length) msg = `ไม่รู้จักรหัส: ${[...new Set(unknown)].join(', ')}`;
+  else if (start + items.length - 1 > last) msg = `มี ${items.length} รหัส เกินวันสุดท้ายของเดือน (${last})`;
+  pastePlan = msg ? [] : items.flatMap((code, i) => (code ? [{ key: dateKey(y, m0, start + i), code }] : []));
+  $('#pastePreview').replaceChildren(...pastePlan.map(({ key, code }) => {
+    const [, , d] = parseKey(key);
+    return el('span', {}, `${d} ${DOW_S[new Date(y, m0, d).getDay()]}`, el('b', { class: shiftByCode(code).group, textContent: code }));
+  }));
+  $('#pasteMsg').textContent = msg;
+  $('#pasteApply').disabled = !pastePlan.length;
+}
+async function applyPaste() {
+  await pending?.();
+  try {
+    const by = new Map((await monthDays(state.y, state.m0)).map(r => [r.date, r]));
+    await tx('readwrite', s => pastePlan.forEach(({ key, code }) => s.put({ ...(by.get(key) || blank(key)), shift: code })));
+    toast(`ใส่กะแล้ว ${pastePlan.length} วัน`);
+  } catch {
+    toast('บันทึกไม่สำเร็จ พื้นที่เก็บข้อมูลอาจเต็ม');
+  }
+  $('#paste').close();
+  refresh();
+}
+
 // ---------- backup ----------
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 const store = { // localStorage can throw in private mode
@@ -350,7 +382,18 @@ $('#quickChips').append(...[...SHIFTS.map(s => [s.code, s.code, s.group]), ['', 
 $('#quickOpen').onclick = () => setQuick(true);
 $('#quickDone').onclick = () => setQuick(false);
 
-$('#sheetClose').onclick = () => $('#sheet').close();
+$('#pasteOpen').onclick = () => {
+  $('#pasteText').value = '';
+  $('#pasteStart').value = 1;
+  $('#pasteMonth').textContent = monthTitle(state.y, state.m0);
+  previewPaste();
+  $('#paste').showModal();
+};
+$('#pasteText').oninput = $('#pasteStart').oninput = previewPaste;
+$('#pasteCancel').onclick = () => $('#paste').close();
+$('#pasteApply').onclick = applyPaste;
+
+$('#sheetClose').onclick =() => $('#sheet').close();
 $('#sheet').addEventListener('close', async () => { await pending?.(); refresh(); });
 $('#viewerClose').onclick = () => $('#viewer').close();
 

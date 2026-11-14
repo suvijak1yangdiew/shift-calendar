@@ -29,7 +29,24 @@ export const monthTitle = (y, m0) => `${MONTHS[m0]} ${y}`;
 export const isEmptyDay = r =>
   !r.shift && !r.in && !r.out && !(r.note || '').trim() && !(r.photos && r.photos.length);
 
-const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+// A row of shift codes, one per consecutive day. Tab-separated text (copied from a
+// spreadsheet) keeps empty cells as skipped days; otherwise split on spaces/commas.
+// items: code, or null = leave that day unchanged.
+export function parseShiftLine(text) {
+  const t = text.replace(/^[ \r\n]+|[ \r\n]+$/g, '');
+  const tokens = t.includes('\t') ? t.split(/\t|\r?\n/) : t.split(/[\s,]+/).filter(Boolean);
+  const unknown = [];
+  const items = tokens.map(raw => {
+    const code = raw.trim().toUpperCase();
+    if (code === '' || code === '-') return null;
+    if (shiftByCode(code)) return code;
+    unknown.push(code);
+    return null;
+  });
+  return { items, unknown };
+}
+
+const TIME =/^([01]\d|2[0-3]):[0-5]\d$/;
 const okTime = t => t === '' || (typeof t === 'string' && TIME.test(t));
 
 export function validateBackup(obj) {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SHIFTS, shiftByCode, dateKey, monthCells, monthTitle, isEmptyDay, validateBackup } from '../core.js';
+import { SHIFTS, shiftByCode, dateKey, monthCells, monthTitle, isEmptyDay, validateBackup, parseShiftLine } from '../core.js';
 
 test('shift table matches spec', () => {
   assert.deepEqual(SHIFTS.map(s => s.code),
@@ -26,6 +26,16 @@ test('isEmptyDay', () => {
   assert.equal(isEmptyDay({ date:'x', shift:'', in:'', out:'', note:' ', photos:[] }), true);
   assert.equal(isEmptyDay({ date:'x', shift:'N', in:'', out:'', note:'', photos:[] }), false);
   assert.equal(isEmptyDay({ date:'x', shift:'', in:'', out:'', note:'', photos:[{}] }), false);
+});
+test('parseShiftLine: spaces, commas, newlines, lower case', () => {
+  assert.deepEqual(parseShiftLine(' a2 N,x\nrph  n2 '), { items: ['A2', 'N', 'X', 'RPH', 'N2'], unknown: [] });
+});
+test('parseShiftLine: tabs keep empty cells as skipped days', () => {
+  assert.deepEqual(parseShiftLine('N\t\tM\t-\tX'), { items: ['N', null, 'M', null, 'X'], unknown: [] });
+});
+test('parseShiftLine: unknown codes reported, empty input', () => {
+  assert.deepEqual(parseShiftLine('N Q7 M zz'), { items: ['N', null, 'M', null], unknown: ['Q7', 'ZZ'] });
+  assert.deepEqual(parseShiftLine('   '), { items: [], unknown: [] });
 });
 test('validateBackup accepts valid', () => {
   const r = validateBackup({ app:'shiftcal', version:1, days:[{ date:'2026-11-19', shift:'N', in:'', out:'', note:'a', photos:[] }] });
