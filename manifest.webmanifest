@@ -1,0 +1,9 @@
+{
+  "name": "ปฏิทินกะงาน",
+  "short_name": "กะงาน",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fbfaf7",
+  "theme_color": "#fbfaf7",
+  "icons": [{ "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }]
+}
