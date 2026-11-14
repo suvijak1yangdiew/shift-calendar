@@ -1,4 +1,24 @@
-import { SHIFTS, shiftByCode, dateKey, monthCells, monthTitle, MONTHS, isEmptyDay, validateBackup, parseShiftLine } from './core.js';
+import { SHIFTS, shiftByCode, dateKey, monthCells, monthTitle, MONTHS, isEmptyDay, validateBackup, parseShiftLine, STICKERS } from './core.js';
+
+// Stickers: original drawings, static markup only (never built from user input).
+const STICKER_SVG = {
+  heart: '<path fill="#f06292" d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 2.9 4.5 6.6 4.5c2 0 3.6 1 5.4 3 1.8-2 3.4-3 5.4-3 3.7 0 5.7 3.8 4.2 7.2C19.5 16.4 12 21 12 21z"/>',
+  star: '<path fill="#f5a623" d="M12 2.5l2.9 6.2 6.6.8-4.9 4.6 1.3 6.7L12 17.5l-5.9 3.3 1.3-6.7L2.5 9.5l6.6-.8z"/>',
+  bow: '<path fill="#e84a7f" d="M12 12 2.5 6v12zM12 12l9.5-6v12z"/><circle cx="12" cy="12" r="3" fill="#c2255c"/>',
+  paw: '<g fill="#8d6e63"><ellipse cx="12" cy="16" rx="5" ry="4"/><circle cx="5.5" cy="10.5" r="2.2"/><circle cx="9.5" cy="6.5" r="2.2"/><circle cx="14.5" cy="6.5" r="2.2"/><circle cx="18.5" cy="10.5" r="2.2"/></g>',
+  moon: '<path fill="#9575cd" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/>',
+  cloud: '<path fill="#64b5f6" d="M7 19a4.5 4.5 0 0 1-.6-8.96 6 6 0 0 1 11.5 1.5A3.75 3.75 0 0 1 17.5 19z"/>',
+  flower: '<g fill="#f48fb1"><circle cx="12" cy="6.5" r="3.4"/><circle cx="17.2" cy="10.3" r="3.4"/><circle cx="15.2" cy="16.4" r="3.4"/><circle cx="8.8" cy="16.4" r="3.4"/><circle cx="6.8" cy="10.3" r="3.4"/></g><circle cx="12" cy="12" r="3" fill="#fdd835"/>',
+  sparkle: '<path fill="#ab47bc" d="M12 3c1 5.6 3 7.6 9 9-6 1.400-8 3.400-9 9-1-5.600-3-7.600-9-9 6-1.400 8-3.400 9-9z"/>',
+};
+const STICKER_NAMES = { heart: 'หัวใจ', star: 'ดาว', bow: 'โบว์', paw: 'อุ้งเท้า', moon: 'พระจันทร์', cloud: 'เมฆ', flower: 'ดอกไม้', sparkle: 'ประกาย' };
+function icon(id) {
+  if (!STICKER_SVG[id]) return null;
+  const s = document.createElement('span');
+  s.className = 'stk';
+  s.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${STICKER_SVG[id]}</svg>`;
+  return s;
+}
 
 const DOW = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
 const DOW_S = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
@@ -46,7 +66,7 @@ async function tx(mode, fn) {
     t.onerror = t.onabort = () => rej(t.error);
   });
 }
-const blank = date => ({ date, shift: '', in: '', out: '', note: '', photos: [] });
+const blank = date => ({ date, shift: '', sticker: '', in: '', out: '', note: '', photos: [] });
 const getDay = async date => (await tx('readonly', s => s.get(date))) || blank(date);
 async function putDay(rec) {
   try {
@@ -190,8 +210,8 @@ async function renderDayCard(box, date, onChange = () => {}) {
   box.replaceChildren(
     el('div', { class: 'th-row' },
       date === state.today
-        ? el('h1', {}, 'วันนี้', el('small', { textContent: `${DOW[dow]} ${d} ${MON_S[m0]} ${y}` }))
-        : el('h1', {}, `${d} ${MON_S[m0]}`, el('small', { textContent: `วัน${DOW[dow]} ${y}` })),
+        ? el('h1', {}, 'วันนี้', icon(rec.sticker), el('small', { textContent: `${DOW[dow]} ${d} ${MON_S[m0]} ${y}` }))
+        : el('h1', {}, `${d} ${MON_S[m0]}`, icon(rec.sticker), el('small', { textContent: `วัน${DOW[dow]} ${y}` })),
       chip),
     picker,
     el('div', { class: 'tm' }, timeField('เข้างาน', 'in'), timeField('ออกงาน', 'out')),
@@ -221,10 +241,10 @@ async function renderMonth() {
       return el('button', {
         type: 'button',
         class: 'c' + (i % 7 ? '' : ' su') + (key === state.today ? ' td' : ''),
-        'aria-label': [`${DOW[i % 7]} ${d} ${MONTHS[m0]}`, sh && `กะ ${sh.code}`, text, r?.photos.length && `${r.photos.length} ภาพ`].filter(Boolean).join(', '),
+        'aria-label': [`${DOW[i % 7]} ${d} ${MONTHS[m0]}`, sh && `กะ ${sh.code}`, STICKER_NAMES[r?.sticker] && `สติกเกอร์${STICKER_NAMES[r.sticker]}`, text, r?.photos.length && `${r.photos.length} ภาพ`].filter(Boolean).join(', '),
         onclick: () => tapDay(key),
       },
-        el('span', { class: 'num', textContent: d }),
+        el('span', { class: 'top' }, icon(r?.sticker), el('span', { class: 'num', textContent: d })),
         r?.photos.length ? el('span', { class: 'ph' }) : null,
         sh ? el('b', { class: sh.group, textContent: sh.code }) : null,
         text ? el('p', { textContent: text }) : null);
@@ -248,9 +268,9 @@ async function renderMonth() {
 
 async function tapDay(key) {
   if (!state.quick) return openSheet(key);
-  if (state.quickCode === undefined) return toast('เลือกกะก่อน แล้วค่อยแตะวัน');
+  if (state.quickCode === undefined) return toast('เลือกก่อน แล้วค่อยแตะวัน');
   const rec = await getDay(key);
-  rec.shift = state.quickCode;
+  rec[state.quick] = state.quickCode; // state.quick is the field name: 'shift' or 'sticker'
   if (!(await putDay(rec))) return;
   renderMonth();
   if (key === state.today) renderDayCard($('#today'), state.today, renderMonth);
@@ -262,12 +282,48 @@ async function openSheet(key) {
   $('#sheet').showModal();
 }
 
-function setQuick(on) {
-  state.quick = on;
-  state.quickCode = undefined;
-  $('#quickBar').hidden = !on;
-  $('#quickOpen').hidden = on;
-  for (const b of $('#quickChips').children) b.classList.remove('sel');
+// Tap-to-apply mode. mode: false | 'shift' | 'sticker' (the day field being set).
+function setQuick(mode, code) {
+  state.quick = mode;
+  state.quickCode = code;
+  $('#quickBar').hidden = !mode;
+  $('.tools').hidden = !!mode;
+  if (!mode) return;
+  $('#quickHint').textContent = mode === 'shift' ? 'เลือกกะ แล้วแตะวันที่ต้องการ' : 'เลือกสติกเกอร์ แล้วแตะวันที่ต้องการ';
+  const opts = mode === 'shift'
+    ? [...SHIFTS.map(s => [s.code, s.code, s.group]), ['', 'ลบกะ', 'none']]
+    : [...STICKERS.map(id => [id, null, 'none']), ['', 'ลบสติกเกอร์', 'none']];
+  $('#quickChips').replaceChildren(...opts.map(([val, label, cls]) => {
+    const b = el('button', {
+      type: 'button', class: `chip ${cls}${val === code ? ' sel' : ''}`,
+      onclick: e => {
+        state.quickCode = val;
+        for (const x of $('#quickChips').children) x.classList.toggle('sel', x === e.currentTarget);
+      },
+    }, label ?? icon(val));
+    if (label == null) b.setAttribute('aria-label', STICKER_NAMES[val]);
+    return b;
+  }));
+}
+
+// ---------- decoration shop: themes + stickers (all free, all local) ----------
+const THEMES = [['', 'ครีม', ['#fbfaf7', '#1a1d21', '#ebe8e1']], ['pink', 'ชมพูโบว์', ['#fff5f8', '#c92a63', '#ffdbe6']], ['purple', 'ม่วงซน', ['#f6f1ff', '#2a1e3d', '#c9a7ff']]];
+function applyTheme(t) {
+  const root = document.documentElement;
+  root.dataset.theme = t;
+  store.set('theme', t);
+  $('meta[name=theme-color]').content = getComputedStyle(root).getPropertyValue('--bg').trim();
+  renderShop();
+}
+function renderShop() {
+  const cur = document.documentElement.dataset.theme || '';
+  $('#themes').replaceChildren(...THEMES.map(([id, name, sw]) =>
+    el('button', { type: 'button', class: 'theme', 'aria-pressed': String(id === cur), onclick: () => applyTheme(id) },
+      el('span', { class: 'sw' }, ...sw.map(c => { const i = el('i'); i.style.background = c; return i; })),
+      name, el('small', { textContent: id === cur ? 'ใช้อยู่' : '' }))));
+  $('#stickers').replaceChildren(...STICKERS.map(id =>
+    el('button', { type: 'button', onclick: () => { $('#shop').close(); setQuick('sticker', id); $('#grid').scrollIntoView({ block: 'center' }); } },
+      icon(id), STICKER_NAMES[id])));
 }
 
 // ---------- paste a whole month of shifts ----------
@@ -346,7 +402,7 @@ async function importData(file) {
   if (!r.ok) return toast('ไฟล์นี้ไม่ใช่ไฟล์สำรองของแอป');
   if (!confirm(`ข้อมูลในเครื่องนี้ทั้งหมดจะถูกแทนที่ด้วยข้อมูลในไฟล์ (${r.days.length} วัน) ทำต่อไหม`)) return;
   try {
-    await replaceAll(r.days.map(d => ({ date: d.date, shift: d.shift, in: d.in, out: d.out, note: d.note, photos: d.photos })));
+    await replaceAll(r.days.map(d => ({ date: d.date, shift: d.shift, sticker: d.sticker || '', in: d.in, out: d.out, note: d.note, photos: d.photos })));
     toast('นำเข้าข้อมูลแล้ว');
   } catch {
     toast('นำเข้าไม่สำเร็จ ข้อมูลเดิมยังอยู่ครบ');
@@ -371,16 +427,10 @@ $('#prev').onclick = () => shiftMonth(-1);
 $('#next').onclick = () => shiftMonth(1);
 $('#goToday').onclick = () => { const [y, m0] = parseKey(state.today); state.y = y; state.m0 = m0; renderMonth(); };
 
-$('#quickChips').append(...[...SHIFTS.map(s => [s.code, s.code, s.group]), ['', 'ลบกะ', 'none']].map(([code, label, cls]) =>
-  el('button', {
-    type: 'button', class: 'chip ' + cls, textContent: label,
-    onclick: e => {
-      state.quickCode = code;
-      for (const b of $('#quickChips').children) b.classList.toggle('sel', b === e.currentTarget);
-    },
-  })));
-$('#quickOpen').onclick = () => setQuick(true);
+$('#quickOpen').onclick = () => setQuick('shift');
 $('#quickDone').onclick = () => setQuick(false);
+$('#shopOpen').onclick = () => { renderShop(); $('#shop').showModal(); };
+$('#shopClose').onclick = () => $('#shop').close();
 
 $('#pasteOpen').onclick = () => {
   $('#pasteText').value = '';

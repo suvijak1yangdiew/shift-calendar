@@ -8,6 +8,8 @@ export const SHIFTS = [
   ...['X', 'AL', 'BL', 'RPH', 'PH', 'TN'].map(c => s(c, '', '', 'x')),
 ];
 
+export const STICKERS = ["heart", "star", "bow", "paw", "moon", "cloud", "flower", "sparkle"];
+
 export const shiftByCode = code => SHIFTS.find(x => x.code === code);
 
 const pad = n => String(n).padStart(2, '0');
@@ -27,7 +29,7 @@ export const MONTHS = ['มกราคม', 'กุมภาพันธ์', '
 export const monthTitle = (y, m0) => `${MONTHS[m0]} ${y}`;
 
 export const isEmptyDay = r =>
-  !r.shift && !r.in && !r.out && !(r.note || '').trim() && !(r.photos && r.photos.length);
+  !r.shift && !r.sticker && !r.in && !r.out && !(r.note || '').trim() && !(r.photos && r.photos.length);
 
 // A row of shift codes, one per consecutive day. Tab-separated text (copied from a
 // spreadsheet) keeps empty cells as skipped days; otherwise split on spaces/commas.
@@ -56,6 +58,7 @@ export function validateBackup(obj) {
   for (const d of obj.days) {
     if (!d || typeof d.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d.date)) return bad('bad date');
     if (d.shift !== '' && !shiftByCode(d.shift)) return bad('bad shift');
+    if (d.sticker !== undefined && d.sticker !== "" && !STICKERS.includes(d.sticker)) return bad("bad sticker");
     if (!okTime(d.in) || !okTime(d.out)) return bad('bad time');
     if (typeof d.note !== 'string') return bad('bad note');
     if (!Array.isArray(d.photos) || !d.photos.every(p => typeof p === 'string' && p.startsWith('data:image/'))) return bad('bad photos');

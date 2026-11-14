@@ -37,6 +37,15 @@ test('parseShiftLine: unknown codes reported, empty input', () => {
   assert.deepEqual(parseShiftLine('N Q7 M zz'), { items: ['N', null, 'M', null], unknown: ['Q7', 'ZZ'] });
   assert.deepEqual(parseShiftLine('   '), { items: [], unknown: [] });
 });
+test('stickers: count as content, validated in backups, optional for old backups', () => {
+  assert.equal(isEmptyDay({ date:'x', shift:'', in:'', out:'', note:'', photos:[], sticker:'heart' }), false);
+  const day = s => ({ app:'shiftcal', version:1, days:[{ date:'2026-11-19', shift:'', in:'', out:'', note:'', photos:[], ...s }] });
+  assert.equal(validateBackup(day({ sticker:'heart' })).ok, true);
+  assert.equal(validateBackup(day({ sticker:'' })).ok, true);
+  assert.equal(validateBackup(day({})).ok, true);
+  assert.equal(validateBackup(day({ sticker:'<img>' })).ok, false);
+  assert.equal(validateBackup(day({ sticker:5 })).ok, false);
+});
 test('validateBackup accepts valid', () => {
   const r = validateBackup({ app:'shiftcal', version:1, days:[{ date:'2026-11-19', shift:'N', in:'', out:'', note:'a', photos:[] }] });
   assert.equal(r.ok, true); assert.equal(r.days.length, 1);
